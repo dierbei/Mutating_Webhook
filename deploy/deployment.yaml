@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mutating-webhook
+  namespace: admission
+  labels:
+    app: mutating-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mutating-webhook
+  template:
+    metadata:
+      labels:
+        app: mutating-webhook
+    spec:
+      containers:
+        - name: mutating-webhook
+          image: docker.io/dierbei/mutating_webhook:202304272218
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CERT_DIR
+              value: "/etc/mutating-webhook/certs/"
+          volumeMounts:
+            - mountPath: /etc/mutating-webhook/certs/
+              name: tls-cert
+      volumes:
+        - name: tls-cert
+          secret:
+            secretName: mutating-webhook-tls-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mutating-webhook
+  namespace: admission
+spec:
+  type: ClusterIP
+  selector:
+    app: mutating-webhook
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8080

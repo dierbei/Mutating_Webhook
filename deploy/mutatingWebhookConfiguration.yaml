@@ -1,0 +1,35 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: debug.mutate.extend.k8s
+  namespace: admission
+  annotations:
+    cert-manager.io/inject-ca-from: admission/mutating-webhook-tls-secret
+webhooks:
+  - name: debug.mutate.extend.k8s
+    namespaceSelector:
+      matchLabels:
+        debug: "true"
+    rules:
+      - apiGroups:   [""]
+        apiVersions: ["v1"]
+        operations:  ["CREATE"]
+        resources:   ["pods"]
+        scope:       "Namespaced"
+    # （Ignore|Fail）
+    # 当值为 Ignore 时，表示当 webhook 处理请求出错时，直接忽略错误，请求继续执行
+    # 当值为 Fail 时，表示当 webhook 处理请求出错时，请求将被拒绝，抛出错误信息
+    failurePolicy: Fail
+    # （Exact|Equivalent）
+    # 当值为 Exact 时，表示请求中的对象必须与配置的规则完全匹配，即所有字段都必须匹配
+    # 当值为 Equivalent 时，表示请求中的对象只需要与配置的规则部分匹配即可，即只要任意一个匹配条件符合即可匹配成功
+    matchPolicy: Exact
+    clientConfig:
+      service:
+        namespace: admission
+        name: mutating-webhook
+        path: /mutate
+        port: 443
+    admissionReviewVersions: ["v1", "v1beta1"]
+    sideEffects: None
+    timeoutSeconds: 10
